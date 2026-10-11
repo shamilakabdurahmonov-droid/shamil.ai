@@ -1,0 +1,597 @@
+<!doctype html>
+<html lang="tg">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>DEVELOPER 2026 — TOONHUB & КОДИК AI-ПИТОМЕЦ</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS & React & Babel -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      overflow-x: hidden;
+      background: #070b18;
+      color: #f3f6ff;
+    }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #070b18; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #2a416a; border-radius: 99px; }
+    @keyframes floatUp {
+      0% { transform: translateY(0) scale(0.8); opacity: 1; }
+      100% { transform: translateY(-60px) scale(1.2); opacity: 0; }
+    }
+    .floating-particle {
+      position: absolute;
+      animation: floatUp 1s ease-out forwards;
+      pointer-events: none;
+      font-weight: 900;
+      z-index: 50;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    const PETS = [
+      { id: 'coder', name: 'Кодер', title: 'КОДЕР', bg: '#F4845F', panel: '#f79b7f', emoji: '👨‍💻', line: 'Код навис, таҷриба гир ва лоиҳаи худро соз.', file: 'main.js', sample: 'console.log("Салом аз Кодер! Турнири 2026.");' },
+      { id: 'cat', name: 'Кот-кодер', title: 'КОТ-КОДЕР', bg: '#6BBF7A', panel: '#85CC92', emoji: '🐱‍💻', line: 'Мяу! Дӯстдори код, кофе ва миссияҳои шавқовар.', file: 'todo.jsx', sample: 'console.log("Мяу! Кофе ва код ҳаёти ман аст.");' },
+      { id: 'bug', name: 'Баг', title: 'БАГ', bg: '#E882B4', panel: '#ED9DC4', emoji: '🐛', line: 'Биё хато ёбем, ислоҳ кунем ва коди тоза нависем.', file: 'bug_hunter.js', sample: 'const bugFixed = true;\nconsole.log("Bug fixed status:", bugFixed);' },
+      { id: 'bot', name: 'AI-Бот', title: 'AI-БОТ', bg: '#6EB5FF', panel: '#8DC4FF', emoji: '🤖', line: 'Система онлайн аст. Вазифаро ба қадамҳо ҷудо кун.', file: 'ai_core.py', sample: 'console.log("AI Core online & ready for tournament");' }
+    ];
+
+    const IMAGES = PETS.map(p => ({
+      src: p.id === 'coder' ? 'https://fifth-gentle-45902158.figma.site/_components/v2/4de492f6d9cf8244ad5293233e5c6f52407d42fc/1.02464a56.png' :
+           p.id === 'cat' ? 'https://fifth-gentle-45902158.figma.site/_components/v2/4de492f6d9cf8244ad5293233e5c6f52407d42fc/2.b977faab.png' :
+           p.id === 'bug' ? 'https://fifth-gentle-45902158.figma.site/_components/v2/4de492f6d9cf8244ad5293233e5c6f52407d42fc/3.4df853b4.png' :
+           'https://fifth-gentle-45902158.figma.site/_components/v2/4de492f6d9cf8244ad5293233e5c6f52407d42fc/4.4457fbce.png',
+      name: p.name,
+      bg: p.bg,
+      panel: p.panel,
+      id: p.id
+    }));
+
+    const RANDOM_QUOTES = [
+      "Bug нест, ин фичаи пинҳонӣ аст! 😎",
+      "Кофе тамом шуд, кодинг истод! ☕",
+      "Ҳанӯз чанд қатор код ва мо ғолиб мешавем! 🚀",
+      "Ман кадами бе хато навишта истодаам... фикр мекунам. 💻",
+      "Девелопери аслӣ шабҳо кор мекунад! 🌙"
+    ];
+
+    function App() {
+      const [view, setView] = useState('home');
+      const [activeIndex, setActiveIndex] = useState(0);
+      const [isAnimating, setIsAnimating] = useState(false);
+      const [isMobile, setIsMobile] = useState(false);
+      const [playerName, setPlayerName] = useState(localStorage.getItem('kodik-player') || 'Шамил');
+      const [currentTime, setCurrentTime] = useState('');
+      const [particles, setParticles] = useState([]);
+      
+      const [states, setStates] = useState(() => {
+        const initial = {};
+        PETS.forEach(p => {
+          try {
+            initial[p.id] = JSON.parse(localStorage.getItem('kodik-state-' + p.id)) || { energy: 78, mood: 85, quality: 63, coffee: 55, xp: 0, missions: 0 };
+          } catch(e) {
+            initial[p.id] = { energy: 78, mood: 85, quality: 63, coffee: 55, xp: 0, missions: 0 };
+          }
+        });
+        return initial;
+      });
+
+      const [chatMessages, setChatMessages] = useState([
+        { sender: 'pet', text: 'Салом! Ман омодаам. Биё якҷоя код нависем ва сатҳро баланд кунем! 🚀' }
+      ]);
+      const [chatInput, setChatInput] = useState('');
+      const [editorCode, setEditorCode] = useState('');
+      const [outputResult, setOutputResult] = useState('Натиҷаи код дар ин ҷо пайдо мешавад.');
+      const [showLab, setShowLab] = useState(false);
+
+      useEffect(() => {
+        IMAGES.forEach((img) => {
+          const image = new Image();
+          image.src = img.src;
+        });
+
+        const handleResize = () => setIsMobile(window.innerWidth < 640);
+        handleResize();
+        window.addEventListener('resize', handleResize);
+
+        const updateClock = () => {
+          const now = new Date();
+          const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          setCurrentTime(`${timeStr} · 11.10.2026`);
+        };
+        updateClock();
+        const clockInterval = setInterval(updateClock, 1000);
+
+        return () => {
+          window.removeEventListener('resize', handleResize);
+          clearInterval(clockInterval);
+        };
+      }, []);
+
+      useEffect(() => {
+        const timer = setInterval(() => {
+          setStates(prev => {
+            const updated = { ...prev };
+            for (const id in updated) {
+              updated[id] = {
+                ...updated[id],
+                energy: Math.max(0, updated[id].energy - 1),
+                mood: Math.max(0, updated[id].mood - 1),
+                coffee: Math.max(0, updated[id].coffee - 1)
+              };
+              try { localStorage.setItem('kodik-state-' + id, JSON.stringify(updated[id])); } catch(e){}
+            }
+            return updated;
+          });
+        }, 15000);
+        return () => clearInterval(timer);
+      }, []);
+
+      useEffect(() => {
+        if (view !== 'home') {
+          const p = PETS.find(x => x.id === view);
+          if (p) setEditorCode(p.sample);
+        }
+      }, [view]);
+
+      const persistState = (id, newSt) => {
+        setStates(prev => {
+          const updated = { ...prev, [id]: newSt };
+          try { localStorage.setItem('kodik-state-' + id, JSON.stringify(newSt)); } catch(e){}
+          return updated;
+        });
+      };
+
+      const triggerParticle = (symbol) => {
+        const id = Date.now() + Math.random();
+        const x = 40 + Math.random() * 20;
+        const y = 40 + Math.random() * 20;
+        setParticles(prev => [...prev, { id, symbol, x, y }]);
+        setTimeout(() => {
+          setParticles(prev => prev.filter(p => p.id !== id));
+        }, 1000);
+      };
+
+      const navigate = (direction) => {
+        if (isAnimating) return;
+        setIsAnimating(true);
+        setActiveIndex((prev) => {
+          if (direction === 'next') return (prev + 1) % 4;
+          else return (prev + 3) % 4;
+        });
+        setTimeout(() => setIsAnimating(false), 650);
+      };
+
+      const center = activeIndex;
+      const left = (activeIndex + 3) % 4;
+      const right = (activeIndex + 1) % 4;
+      const back = (activeIndex + 2) % 4;
+
+      const getItemStyle = (index) => {
+        let role = index === center ? 'center' : index === left ? 'left' : index === right ? 'right' : 'back';
+        let transform = '', filter = '', opacity = 1, zIndex = 5, leftPos = '50%', height = isMobile ? '13%' : '22%', bottom = isMobile ? '32%' : '12%';
+
+        if (role === 'center') {
+          transform = `translateX(-50%) scale(${isMobile ? 1.25 : 1.68})`;
+          filter = 'blur(0px)'; opacity = 1; zIndex = 20; leftPos = '50%'; height = isMobile ? '60%' : '92%'; bottom = isMobile ? '22%' : '0px';
+        } else if (role === 'left') {
+          transform = 'translateX(-50%) scale(1)'; filter = 'blur(2px)'; opacity = 0.85; zIndex = 10; leftPos = isMobile ? '20%' : '30%'; height = isMobile ? '16%' : '28%'; bottom = isMobile ? '32%' : '12%';
+        } else if (role === 'right') {
+          transform = 'translateX(-50%) scale(1)'; filter = 'blur(2px)'; opacity = 0.85; zIndex = 10; leftPos = isMobile ? '80%' : '70%'; height = isMobile ? '16%' : '28%'; bottom = isMobile ? '32%' : '12%';
+        } else if (role === 'back') {
+          transform = 'translateX(-50%) scale(1)'; filter = 'blur(4px)'; opacity = 1; zIndex = 5; leftPos = '50%'; height = isMobile ? '13%' : '22%'; bottom = isMobile ? '32%' : '12%';
+        }
+
+        return {
+          position: 'absolute', aspectRatio: '0.6 / 1', transform, filter, opacity, zIndex, left: leftPos, height, bottom,
+          transition: 'transform 650ms cubic-bezier(0.4,0,0.2,1), filter 650ms cubic-bezier(0.4,0,0.2,1), opacity 650ms cubic-bezier(0.4,0,0.2,1), left 650ms cubic-bezier(0.4,0,0.2,1), height 650ms cubic-bezier(0.4,0,0.2,1), bottom 650ms cubic-bezier(0.4,0,0.2,1)',
+          willChange: 'transform, filter, opacity, left',
+        };
+      };
+
+      const currentPet = PETS[activeIndex];
+      const currentImg = IMAGES[activeIndex];
+      const st = states[currentPet.id] || { energy: 78, mood: 85, quality: 63, coffee: 55, xp: 0, missions: 0 };
+      
+      let totalXP = 0;
+      Object.values(states).forEach(s => totalXP += s.xp);
+
+      const handleAction = (type) => {
+        let s = { ...st };
+        if (type === 'coffee') {
+          s.energy = Math.min(100, s.energy + 18);
+          s.coffee = Math.min(100, s.coffee + 12);
+          s.mood = Math.min(100, s.mood + 4);
+          triggerParticle('☕');
+        } else if (type === 'rest') {
+          s.energy = Math.min(100, s.energy + 25);
+          s.mood = Math.min(100, s.mood + 8);
+          triggerParticle('💤');
+        } else if (type === 'bugs') {
+          s.mood = Math.min(100, s.mood + 12);
+          s.quality = Math.min(100, s.quality + 10);
+          s.energy = Math.max(0, s.energy - 5);
+          s.xp += 15;
+          s.missions++;
+          triggerParticle('✨');
+        } else if (type === 'write') {
+          if (s.energy < 8) {
+            alert('Ман хаста шудам. Аввал истироҳат кун 😴');
+            return;
+          }
+          s.energy = Math.max(0, s.energy - 9);
+          s.quality = Math.min(100, s.quality + 7);
+          s.xp += 10;
+          s.missions++;
+          triggerParticle('💻');
+          setShowLab(true);
+        }
+        persistState(currentPet.id, s);
+      };
+
+      const handleChatSend = (e) => {
+        e.preventDefault();
+        if (!chatInput.trim()) return;
+        const userText = chatInput.trim();
+        const newMsgs = [...chatMessages, { sender: 'user', text: userText }];
+        setChatMessages(newMsgs);
+        setChatInput('');
+
+        setTimeout(() => {
+          const randomReply = RANDOM_QUOTES[Math.floor(Math.random() * RANDOM_QUOTES.length)];
+          setChatMessages(prev => [...prev, { sender: 'pet', text: randomReply }]);
+        }, 600);
+      };
+
+      const runCode = () => {
+        try {
+          const logs = [];
+          new Function('console', editorCode)({
+            log: (...a) => logs.push(a.join(' ')),
+            warn: (...a) => logs.push(a.join(' ')),
+            error: (...a) => logs.push(a.join(' '))
+          });
+          setOutputResult(logs.join('\n') || 'Код иҷро шуд, аммо натиҷаи console.log нест.');
+          let s = { ...st, xp: st.xp + 5, quality: Math.min(100, st.quality + 2), missions: st.missions + 1 };
+          persistState(currentPet.id, s);
+          triggerParticle('✨');
+        } catch(err) {
+          setOutputResult('Хато: ' + err.message);
+        }
+      };
+
+      if (view === 'home') {
+        return (
+          <div
+            className="relative w-full h-screen overflow-hidden transition-colors duration-700 ease-in-out"
+            style={{ backgroundColor: currentImg.bg, fontFamily: "'Inter', sans-serif" }}
+          >
+            <div className="absolute inset-0 pointer-events-none z-[-2]" style={{ backgroundImage: 'linear-gradient(#8ad8ff09 1px, transparent 1px), linear-gradient(90deg, #8ad8ff09 1px, transparent 1px)', backgroundSize: '36px 36px', opacity: 0.6 }} />
+            <div className="absolute inset-0 pointer-events-none z-50" style={{ opacity: 0.4, backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.08'/%3E%3C/svg%3E")`, backgroundSize: '200px 200px' }} />
+
+            <div
+              className="absolute inset-x-0 flex items-center justify-center pointer-events-none select-none z-[2]"
+              style={{
+                top: '18%',
+                fontFamily: "'Anton', sans-serif",
+                fontSize: 'clamp(90px, 28vw, 380px)',
+                fontWeight: 900,
+                color: 'white',
+                lineHeight: 1,
+                textTransform: 'uppercase',
+                letterSpacing: '-0.02em',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {currentPet.title}
+            </div>
+
+            <div className="absolute top-6 left-4 sm:left-8 z-[60] flex items-center gap-3">
+              <span className="text-xs font-semibold uppercase text-white tracking-[0.18em] opacity-90">DEVELOPER 2026 · AI-ПИТОМЕЦ</span>
+              <span className="px-3 py-1 bg-black/30 backdrop-blur-md rounded-full text-xs font-mono font-bold text-[#d5ff42] border border-white/20">
+                ⭐ Умумии XP: {totalXP}
+              </span>
+            </div>
+
+            <div className="absolute inset-0 z-[3]">
+              {IMAGES.map((item, index) => (
+                <div key={index} style={getItemStyle(index)}>
+                  <img
+                    src={item.src}
+                    alt={item.name}
+                    style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'bottom center', userSelect: 'none', pointerEvents: 'none', filter: 'drop-shadow(0 15px 25px rgba(0,0,0,0.4))' }}
+                    draggable={false}
+                  />
+                </div>
+              ))}
+            </div>
+
+            <div className="absolute bottom-6 left-4 sm:bottom-20 sm:left-24 z-[60] max-w-[320px]">
+              <p className="mb-2 sm:mb-3 text-base sm:text-[22px] font-bold uppercase tracking-wide text-white opacity-95">
+                {currentPet.name}
+              </p>
+              <p className="hidden sm:block text-xs sm:text-sm mb-4 sm:mb-5 text-white opacity-85 leading-relaxed">
+                {currentPet.line}
+              </p>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => navigate('prev')}
+                  className="w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center cursor-pointer bg-transparent border-2 border-white text-white hover:scale-108 hover:bg-white/12 transition-all duration-150"
+                >
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                </button>
+                <button
+                  onClick={() => navigate('next')}
+                  className="w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center cursor-pointer bg-transparent border-2 border-white text-white hover:scale-108 hover:bg-white/12 transition-all duration-150"
+                >
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                </button>
+              </div>
+            </div>
+
+            <div className="absolute bottom-6 right-4 sm:bottom-20 sm:right-10 z-[60]">
+              <button
+                onClick={() => setView(currentPet.id)}
+                className="flex items-center gap-2 bg-transparent border-0 cursor-pointer transition-opacity duration-200 hover:opacity-100"
+                style={{
+                  fontFamily: "'Anton', sans-serif",
+                  fontSize: 'clamp(20px, 4vw, 56px)',
+                  fontWeight: 400,
+                  color: 'white',
+                  opacity: 0.95,
+                  letterSpacing: '-0.02em',
+                  lineHeight: 1,
+                  textTransform: 'uppercase',
+                }}
+              >
+                <span>DISCOVER IT</span>
+                <svg className="w-5 h-5 sm:w-8 sm:h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+              </button>
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div
+          className="min-h-screen text-[#f3f6ff] p-4 sm:p-6 transition-colors duration-700 relative overflow-x-hidden"
+          style={{ backgroundColor: currentPet.bg }}
+        >
+          {particles.map(p => (
+            <span key={p.id} className="floating-particle text-3xl sm:text-4xl" style={{ left: p.x + '%', top: p.y + '%' }}>
+              {p.symbol}
+            </span>
+          ))}
+
+          <div className="absolute inset-0 pointer-events-none z-0" style={{ backgroundImage: 'linear-gradient(#8ad8ff09 1px, transparent 1px), linear-gradient(90deg, #8ad8ff09 1px, transparent 1px)', backgroundSize: '36px 36px', opacity: 0.4 }} />
+
+          <div className="max-w-[1420px] mx-auto relative z-10">
+            <header className="flex items-center justify-between mb-6 flex-wrap gap-4">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setView('home')}
+                  className="px-5 py-2.5 bg-black/40 hover:bg-black/60 border border-white/20 rounded-full font-bold text-sm tracking-wide text-white transition-all cursor-pointer flex items-center gap-2 shadow-lg"
+                >
+                  ← Бозгашт
+                </button>
+                <div className="w-11 h-11 rounded-2xl overflow-hidden bg-black/30 border border-white/20 flex items-center justify-center shadow-md">
+                  <img src={currentImg.src} alt={currentPet.name} className="w-full h-full object-contain object-bottom" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-xl sm:text-2xl font-black text-white">{currentPet.name}</h1>
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#39e6ff] animate-pulse"></span>
+                  </div>
+                  <p className="text-xs text-white/80 font-medium">Питомеци виртуалӣ барои девелопер</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 bg-black/30 backdrop-blur-md border border-white/15 px-3 py-2 rounded-2xl shadow-xl">
+                <button className="w-9 h-9 rounded-xl hover:bg-white/15 flex items-center justify-center text-white transition-all cursor-pointer">🔊</button>
+                <div className="px-3 py-1 bg-white/10 rounded-xl text-xs font-mono font-bold text-white flex items-center gap-1.5">
+                  <span>🕒</span> {currentTime}
+                </div>
+              </div>
+            </header>
+
+            <div className="grid grid-cols-1 lg:grid-cols-[330px_1fr_350px] gap-5 items-start">
+              
+              <div className="flex flex-col gap-5">
+                <div className="bg-[#171622]/85 backdrop-blur-xl border border-white/15 rounded-[24px] p-5 shadow-2xl">
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="text-base">📊</span>
+                    <h2 className="text-sm font-extrabold uppercase tracking-wider text-white">Нишондиҳандаҳо (Status)</h2>
+                  </div>
+                  <div className="flex flex-col gap-3.5">
+                    <div>
+                      <div className="flex justify-between text-xs font-bold text-white/90 mb-1"><span>⚡ Энергия (Energy)</span><b>{st.energy}</b></div>
+                      <div className="h-3 bg-black/40 rounded-full overflow-hidden p-0.5 border border-white/10"><div className="h-full bg-gradient-to-r from-[#13b86c] to-[#4be18d] rounded-full transition-all duration-350" style={{ width: st.energy + '%' }}></div></div>
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-xs font-bold text-white/90 mb-1"><span>😊 Кайфият (Mood)</span><b>{st.mood}</b></div>
+                      <div className="h-3 bg-black/40 rounded-full overflow-hidden p-0.5 border border-white/10"><div className="h-full bg-gradient-to-r from-[#ffb526] to-[#ffe35a] rounded-full transition-all duration-350" style={{ width: st.mood + '%' }}></div></div>
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-xs font-bold text-white/90 mb-1"><span>💻 Сифати код (Quality)</span><b>{st.quality}</b></div>
+                      <div className="h-3 bg-black/40 rounded-full overflow-hidden p-0.5 border border-white/10"><div className="h-full bg-gradient-to-r from-[#328aff] to-[#67d4ff] rounded-full transition-all duration-350" style={{ width: st.quality + '%' }}></div></div>
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-xs font-bold text-white/90 mb-1"><span>☕ Кофе / Гуруснагӣ</span><b>{st.coffee}</b></div>
+                      <div className="h-3 bg-black/40 rounded-full overflow-hidden p-0.5 border border-white/10"><div className="h-full bg-gradient-to-r from-[#ac5aff] to-[#ed90ff] rounded-full transition-all duration-350" style={{ width: st.coffee + '%' }}></div></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-[#171622]/85 backdrop-blur-xl border border-white/15 rounded-[24px] p-5 shadow-2xl">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-base">👑</span>
+                    <h2 className="text-sm font-extrabold uppercase tracking-wider text-white">Сатҳ ва XP</h2>
+                  </div>
+                  <div className="flex justify-between items-center text-xs font-bold text-white/90 mb-2">
+                    <span>САТҲ {1 + Math.floor(st.xp / 100)}</span>
+                    <span className="font-mono text-[#d5ff42]">{st.xp} / {(1 + Math.floor(st.xp / 100)) * 100} XP</span>
+                  </div>
+                  <div className="h-3 bg-black/40 rounded-full overflow-hidden p-0.5 border border-white/10">
+                    <div className="h-full bg-gradient-to-r from-[#d5ff42] to-[#39e6ff] rounded-full transition-all duration-350" style={{ width: (st.xp % 100) + '%' }}></div>
+                  </div>
+                </div>
+
+                <div className="bg-[#171622]/85 backdrop-blur-xl border border-white/15 rounded-[24px] p-5 shadow-2xl">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-base">🎯</span>
+                    <h2 className="text-sm font-extrabold uppercase tracking-wider text-white">Миссияҳои рӯзона</h2>
+                  </div>
+                  <div className="flex flex-col gap-2.5 text-xs font-medium text-white/90">
+                    <label className="flex items-center justify-between gap-2 cursor-pointer hover:bg-white/5 p-1.5 rounded-xl transition-all">
+                      <div className="flex items-center gap-2"><input type="checkbox" defaultChecked className="accent-[#39e6ff] w-4 h-4 rounded" /><span>10 дақиқа код навис</span></div>
+                      <span className="text-[#39e6ff] font-bold">+50 XP</span>
+                    </label>
+                    <label className="flex items-center justify-between gap-2 cursor-pointer hover:bg-white/5 p-1.5 rounded-xl transition-all">
+                      <div className="flex items-center gap-2"><input type="checkbox" className="accent-[#39e6ff] w-4 h-4 rounded" /><span>3 багро ислоҳ кун</span></div>
+                      <span className="text-[#39e6ff] font-bold">+70 XP</span>
+                    </label>
+                    <label className="flex items-center justify-between gap-2 cursor-pointer hover:bg-white/5 p-1.5 rounded-xl transition-all">
+                      <div className="flex items-center gap-2"><input type="checkbox" defaultChecked className="accent-[#39e6ff] w-4 h-4 rounded" /><span>Кофе диҳ</span></div>
+                      <span className="text-[#39e6ff] font-bold">+30 XP</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col items-center justify-center relative min-h-[480px] lg:min-h-[580px] px-2">
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="w-[340px] h-[340px] sm:w-[440px] sm:h-[440px] rounded-full bg-white/10 blur-3xl"></div>
+                </div>
+
+                <div className="relative z-10 w-full flex items-center justify-center" style={{ height: '380px' }}>
+                  <img
+                    src={currentImg.src}
+                    alt={currentPet.name}
+                    className="max-h-full max-w-full object-contain filter drop-shadow-[0_25px_35px_rgba(0,0,0,0.5)] select-none pointer-events-none"
+                    draggable={false}
+                  />
+                </div>
+
+                <div className="relative z-10 w-full max-w-[500px] mt-[-30px] bg-[#171622]/90 backdrop-blur-xl border border-white/15 rounded-[22px] p-4 shadow-2xl flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#39e6ff] to-[#2158e8] flex items-center justify-center text-xl shadow-lg">💻</div>
+                    <div>
+                      <span className="text-xs font-mono text-[#39e6ff] block font-bold">{currentPet.file}</span>
+                      <span className="text-xs text-white/80">Муҳаррири фаъол · Амали муваффақ: <b>{st.missions}</b></span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowLab(true)}
+                    className="px-4 py-2 bg-gradient-to-r from-[#39e6ff] to-[#2158e8] text-[#070b18] font-extrabold text-xs rounded-xl hover:brightness-110 transition-all cursor-pointer shadow-lg"
+                  >
+                    Кушодани Лаборатория ↗
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-5">
+                <div className="bg-[#171622]/85 backdrop-blur-xl border border-white/15 rounded-[24px] p-5 shadow-2xl">
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="text-base">🎮</span>
+                    <h2 className="text-sm font-extrabold uppercase tracking-wider text-white">Амалҳо</h2>
+                  </div>
+                  <div className="flex flex-col gap-3">
+                    <button onClick={() => handleAction('coffee')} className="flex items-center justify-between p-3.5 rounded-2xl bg-gradient-to-r from-[#12864a] to-[#2bc86d] font-extrabold text-white text-sm cursor-pointer hover:brightness-110 transition-all shadow-md">
+                      <span className="flex items-center gap-2">☕ Додани кофе</span>
+                      <span className="text-xs opacity-80">Энергия</span>
+                    </button>
+                    <button onClick={() => handleAction('write')} className="flex items-center justify-between p-3.5 rounded-2xl bg-gradient-to-r from-[#2158e8] to-[#398dff] font-extrabold text-white text-sm cursor-pointer hover:brightness-110 transition-all shadow-md">
+                      <span className="flex items-center gap-2">💻 Навиштани код</span>
+                      <span className="text-xs opacity-80">Лоиҳа</span>
+                    </button>
+                    <button onClick={() => handleAction('bugs')} className="flex items-center justify-between p-3.5 rounded-2xl bg-gradient-to-r from-[#7332ec] to-[#b04eff] font-extrabold text-white text-sm cursor-pointer hover:brightness-110 transition-all shadow-md">
+                      <span className="flex items-center gap-2">🐛 Ислоҳи багҳо</span>
+                      <span className="text-xs opacity-80">Кайфият</span>
+                    </button>
+                    <button onClick={() => handleAction('rest')} className="flex items-center justify-between p-3.5 rounded-2xl bg-gradient-to-r from-[#c13b0c] to-[#ff7111] font-extrabold text-white text-sm cursor-pointer hover:brightness-110 transition-all shadow-md">
+                      <span className="flex items-center gap-2">😴 Истироҳат / Хоб</span>
+                      <span className="text-xs opacity-80">Хоб</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="bg-[#171622]/85 backdrop-blur-xl border border-white/15 rounded-[24px] p-5 shadow-2xl flex flex-col h-[280px]">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-base">💬</span>
+                    <h2 className="text-sm font-extrabold uppercase tracking-wider text-white">Гуфтугӯ бо {currentPet.name}</h2>
+                  </div>
+                  
+                  <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-2.5 pr-1 text-xs mb-3">
+                    {chatMessages.map((m, idx) => (
+                      <div key={idx} className={`p-2.5 rounded-2xl max-w-[85%] ${m.sender === 'pet' ? 'bg-white/10 text-white self-start rounded-tl-sm' : 'bg-[#39e6ff] text-[#070b18] font-bold self-end rounded-tr-sm'}`}>
+                        {m.text}
+                      </div>
+                    ))}
+                  </div>
+
+                  <form onSubmit={handleChatSend} className="flex gap-2">
+                    <input
+                      type="text"
+                      value={chatInput}
+                      onChange={(e) => setChatInput(e.target.value)}
+                      placeholder="Паём навис..."
+                      className="flex-1 bg-black/40 border border-white/15 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-[#39e6ff]"
+                      maxLength={140}
+                    />
+                    <button type="submit" className="px-3.5 py-2 bg-[#39e6ff] text-[#070b18] rounded-xl font-bold text-xs cursor-pointer hover:brightness-110 transition-all">➤</button>
+                  </form>
+                </div>
+              </div>
+
+            </div>
+
+            {showLab && (
+              <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-4">
+                <div className="bg-[#101e36] border border-[#2a4c72] rounded-[24px] max-w-[800px] w-full p-6 shadow-2xl">
+                  <div className="flex justify-between items-center mb-3">
+                    <h2 className="text-lg font-extrabold text-white flex items-center gap-2"><span>💻</span> Лабораторияи код — {currentPet.name}</h2>
+                    <button onClick={() => setShowLab(false)} className="w-8 h-8 rounded-full bg-white/10 text-white font-bold flex items-center justify-center hover:bg-white/20 cursor-pointer">✕</button>
+                  </div>
+                  <p className="text-xs text-white/70 mb-3">Ин муҳаррири омӯзишии JavaScript аст. Коди худро нависед ва иҷро кунед.</p>
+                  <textarea
+                    value={editorCode}
+                    onChange={(e) => setEditorCode(e.target.value)}
+                    className="w-full min-h-[180px] bg-[#040a13] border border-[#294666] rounded-xl text-[#d8ffb2] p-4 font-mono text-xs outline-none resize-y"
+                    spellCheck="false"
+                  />
+                  <div className="flex gap-3 mt-4">
+                    <button onClick={runCode} className="px-5 py-2.5 bg-[#d5ff42] text-[#182009] rounded-xl font-extrabold text-xs cursor-pointer hover:brightness-110 transition-all shadow-lg">▶ Иҷро кардани код</button>
+                    <button onClick={() => setShowLab(false)} className="px-5 py-2.5 bg-[#192642] border border-[#31496e] text-white rounded-xl font-extrabold text-xs cursor-pointer">Пӯшидан</button>
+                  </div>
+                  <div className="mt-4 p-4 bg-[#040a13] border border-[#294666] rounded-xl text-[#d5ff42] font-mono text-xs whitespace-pre-wrap max-h-[120px] overflow-y-auto">
+                    {outputResult}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.render(<App />, document.getElementById('root'));
+  </script>
+</body>
+</html>
